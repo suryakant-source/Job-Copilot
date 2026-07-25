@@ -1,38 +1,52 @@
 # AI Job Search Co-Pilot 🤖🚀
 
-> A production-quality, local-first system that replaces manual spreadsheet job workflows entirely. Ingest job postings, score them against your resume with explainable reasoning, generate tailored ATS-optimized application assets, continuously discover new openings, and view your entire pipeline in a live terminal dashboard.
+> A production-quality, local-first system that replaces manual spreadsheet job workflows entirely. Ingest job postings, score them against your resume with explainable reasoning, generate tailored ATS-optimized application assets, continuously discover new openings, and view your entire pipeline in a **Visual Web Dashboard** or a **Terminal TUI Dashboard**.
 
 ---
 
-## Architecture Diagram
+## System Architecture Diagram
 
 ```mermaid
 graph TD
-    User([Candidate / CLI User])
-    CLI[job-copilot CLI Node.js / TypeScript]
-    DB[(SQLite Database job-copilot.db)]
-    Watcher[Watcher Daemon job-copilot watch]
-    Parsers[Parsers: Greenhouse, Lever, Ashby, Workday]
-    Scoring[Scoring Engine: Composite 0-100 & Tiers]
-    Tailor[Tailoring Engine: ATS Resume & PDF Generator]
-    Validator[Truthfulness Validator: Claim Diffing]
-    LLM[Provider-Agnostic LLM Adapter: OpenAI / Anthropic / Ollama]
-    API[JSON-RPC / HTTP API :3847]
-    TUI[Go TUI Dashboard job-copilot-dash: Bubble Tea + Lip Gloss]
+    subgraph Client Interfaces
+        User([Candidate User])
+        WebUI[Visual Web Dashboard<br/>http://localhost:3847<br/>Glassmorphism UI / Interactive Kanban]
+        CLI[job-copilot CLI<br/>Node.js / TypeScript]
+        TUI[Go TUI Dashboard<br/>job-copilot-dash<br/>Bubble Tea + Lip Gloss]
+    end
 
-    User -->|npx job-copilot <cmd>| CLI
+    subgraph Core System Engines
+        API[Express REST API Server<br/>Port 3847]
+        DB[(SQLite Database<br/>job-copilot.db)]
+        Watcher[Watchlist Discovery Daemon<br/>job-copilot watch]
+        Parsers[Board Parsers<br/>Greenhouse / Lever / Ashby / Workday]
+        Scoring[Fit Scoring Engine<br/>Composite 0-100 & Tier Classification]
+        Tailor[Tailoring Engine & PDF Renderer<br/>Single-Column ATS Resume + Diff Audit]
+        Validator[Truthfulness Validator<br/>Resume Claim Diffing]
+        LLM[Provider-Agnostic LLM Adapter<br/>Gemini / Groq / OpenAI / Ollama]
+    end
+
+    User -->|Browser UI| WebUI
+    User -->|Terminal CLI| CLI
+    User -->|Terminal TUI| TUI
+
+    WebUI -->|HTTP / REST API| API
     CLI --> Parsers
     CLI --> Scoring
     CLI --> Tailor
-    Tailor --> Validator
-    Scoring --> LLM
-    CLI --> DB
+    
+    API --> DB
+    API --> Scoring
+    API --> Tailor
+    
     Watcher --> Parsers
     Watcher --> Scoring
     Watcher --> DB
-    DB --> API
-    API --> TUI
-    DB --> TUI
+    
+    Tailor --> Validator
+    Scoring --> LLM
+    CLI --> DB
+    TUI -->|SQLite Direct Query| DB
 ```
 
 ---
@@ -70,33 +84,35 @@ graph TD
    - Maintains a persistent `watcher_seen` ledger so jobs are reported once.
    - Generates daily Markdown digests in `./digests/YYYY-MM-DD.md`.
 
-5. **Module 5 — Application Pipeline Dashboard (`job-copilot-dash`)**
-   - Terminal UI built with Go (Bubble Tea + Lip Gloss).
-   - Kanban-style pipeline (`Discovered → Scored → Tailored → Applied → Screening → Interviewing → Offer → Rejected`).
-   - Vim keybindings (`h/j/k/l` navigation, `H/L` move cards, `Tab` view toggle, `Enter` detail pane).
+5. **Module 5 — Visual Web Dashboard & Terminal TUI Dashboard**
+   - **Visual Web Dashboard**: Interactive browser UI at `http://localhost:3847` with drag/drop Kanban pipeline, 1-click job scoring, live scorecard breakdown, ATS PDF generator, and ground-truth resume editor.
+   - **Terminal TUI Dashboard (`job-copilot-dash`)**: Built with Go (Bubble Tea + Lip Gloss). Features Vim keybindings (`h/j/k/l` navigation, `H/L` card movement, `Tab` view toggle, `Enter` detail view).
 
 ---
 
-## 5-Minute Quickstart
+## Quickstart
 
 ### 1. Prerequisites
 - **Node.js**: v20+
 - **npm**: v10+
-- **Go** (optional for building native `job-copilot-dash` binary): 1.21+
+- **Go** (optional for building native `job-copilot-dash` TUI binary): 1.21+
 
 ### 2. Installation
 ```bash
 # Clone repository
-git clone https://github.com/your-username/job-copilot.git
-cd job-copilot
+git clone https://github.com/suryakant-source/Job-Copilot.git
+cd Job-Copilot
 
-# Install dependencies and build Node CLI
+# Install dependencies and build Node CLI & Web Server
 npm install
 npm run build
 ```
 
-### 3. Configure Your Profile
-Edit `resume.md` with your ground-truth experience, and customize `config.yaml` and `watchlist.yaml`.
+### 3. Launch Web Dashboard (Browser Interface)
+```bash
+npm run web
+# Opens Visual Web Dashboard at http://localhost:3847
+```
 
 ### 4. Basic CLI Usage
 ```bash
@@ -111,12 +127,9 @@ node dist/cli.js tailor gh_1a2b3c4d5e6f --cover-letter
 
 # Run single-pass watchlist scan
 node dist/cli.js watch --once
-
-# Start local HTTP API server
-node dist/cli.js server --port 3847
 ```
 
-### 5. Launch Go TUI Dashboard
+### 5. Launch Go Terminal TUI Dashboard
 ```bash
 cd dashboard
 go run main.go
