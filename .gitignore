@@ -12,3 +12,4 @@ digests/*.md
 !digests/.gitkeep
 dashboard/job-copilot-dash
 dashboard/job-copilot-dash.exe
+resume.md
