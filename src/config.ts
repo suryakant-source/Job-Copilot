@@ -64,10 +64,10 @@ export const ConfigSchema = z.object({
   }).default({ A: 80, B: 60, C: 40 }),
   career_goals: z.string().default(''),
   llm: z.object({
-    provider: z.enum(['openai', 'anthropic', 'ollama', 'mock']).default('mock'),
-    model: z.string().default('gpt-4o'),
+    provider: z.enum(['openai', 'anthropic', 'ollama', 'gemini', 'groq', 'mock']).default('mock'),
+    model: z.string().default('gemini-1.5-flash'),
     ollama_base_url: z.string().optional(),
-  }).default({ provider: 'mock', model: 'gpt-4o' }),
+  }).default({ provider: 'mock', model: 'gemini-1.5-flash' }),
 });
 
 export type JobCopilotConfig = z.infer<typeof ConfigSchema>;
