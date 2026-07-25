@@ -1,16 +1,19 @@
 import express from 'express';
 import path from 'node:path';
 import fs from 'node:fs';
+import { exec } from 'node:child_process';
+import yaml from 'yaml';
 import { getDatabase, saveDatabase } from '../db/client.js';
 import { parseJobPosting } from '../parsers/index.js';
 import { scoreJob } from '../scoring/engine.js';
 import { tailorResume } from '../tailoring/engine.js';
 import { loadConfig } from '../config.js';
 import { runWatcherScan } from '../watcher/daemon.js';
+import { LLMAdapter } from '../llm/adapter.js';
 
 export function startApiServer(port = 3847): void {
   const app = express();
-  app.use(express.json());
+  app.use(express.json({ limit: '10mb' }));
 
   // Serve static application downloads
   const appsDir = path.resolve(process.cwd(), './applications');
@@ -22,7 +25,171 @@ export function startApiServer(port = 3847): void {
   if (!fs.existsSync(publicDir)) fs.mkdirSync(publicDir, { recursive: true });
   app.use(express.static(publicDir));
 
-  // API Endpoints
+  // --- CONFIG & ONBOARDING ENDPOINTS ---
+  app.get('/api/config/status', (req, res) => {
+    try {
+      const config = loadConfig();
+      const hasApiKey = Boolean(process.env.GEMINI_API_KEY || process.env.GROQ_API_KEY || process.env.OPENAI_API_KEY);
+      res.json({
+        success: true,
+        configured: hasApiKey,
+        provider: config.llm.provider,
+        model: config.llm.model,
+        candidateName: config.candidate.name || 'Candidate',
+        targetRoles: config.target_roles.primary || [],
+      });
+    } catch (err: any) {
+      res.json({ success: true, configured: false, provider: 'mock', candidateName: 'Candidate', targetRoles: [] });
+    }
+  });
+
+  app.post('/api/config/setup-engine', (req, res) => {
+    try {
+      const { provider, apiKey, model } = req.body;
+      if (!provider || !apiKey) {
+        return res.status(400).json({ success: false, error: 'Provider and API Key are required' });
+      }
+
+      // Update process.env
+      if (provider === 'gemini') process.env.GEMINI_API_KEY = apiKey;
+      else if (provider === 'groq') process.env.GROQ_API_KEY = apiKey;
+      else if (provider === 'openai') process.env.OPENAI_API_KEY = apiKey;
+
+      // Persist to .env file
+      const envPath = path.resolve(process.cwd(), '.env');
+      let envLines: string[] = [];
+      if (fs.existsSync(envPath)) {
+        envLines = fs.readFileSync(envPath, 'utf8').split('\n').filter(line => line.trim() && !line.startsWith(`${provider.toUpperCase()}_API_KEY=`));
+      }
+      envLines.push(`${provider.toUpperCase()}_API_KEY=${apiKey}`);
+      fs.writeFileSync(envPath, envLines.join('\n'), 'utf8');
+
+      // Update config.yaml
+      const configPath = path.resolve(process.cwd(), 'config.yaml');
+      let currentConfig: any = {};
+      if (fs.existsSync(configPath)) {
+        currentConfig = yaml.parse(fs.readFileSync(configPath, 'utf8')) || {};
+      }
+      currentConfig.llm = {
+        provider,
+        model: model || (provider === 'gemini' ? 'gemini-1.5-flash' : provider === 'groq' ? 'llama-3.3-70b-versatile' : 'gpt-4o'),
+      };
+      fs.writeFileSync(configPath, yaml.stringify(currentConfig), 'utf8');
+
+      res.json({ success: true, message: `Engine configured with ${provider} provider!`, provider, model: currentConfig.llm.model });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  app.post('/api/resume/auto-setup', async (req, res) => {
+    try {
+      const { resumeText } = req.body;
+      if (!resumeText || !resumeText.trim()) {
+        return res.status(400).json({ success: false, error: 'Resume text is required' });
+      }
+
+      // Write resume.md
+      const resumePath = path.resolve(process.cwd(), 'resume.md');
+      fs.writeFileSync(resumePath, resumeText, 'utf8');
+
+      // Load current LLM config
+      const config = loadConfig();
+      const llm = new LLMAdapter(config.llm);
+
+      const prompt = `Analyze this candidate resume and return ONLY a valid JSON object (no markdown code fences):
+{
+  "candidate_name": "Full Name",
+  "current_stage": "Short status e.g. 3rd year student / Fresher",
+  "location_base": "City, State, Country",
+  "primary_roles": ["Role 1", "Role 2", "Role 3"],
+  "secondary_roles": ["Role 4", "Role 5"],
+  "must_have_skills": ["Skill 1", "Skill 2", "Skill 3", "Skill 4", "Skill 5"],
+  "strong_plus_skills": ["Skill 6", "Skill 7", "Skill 8"],
+  "adjacent_skills": ["Skill 9", "Skill 10"],
+  "search_keywords": ["keyword 1", "keyword 2", "keyword 3"]
+}
+
+RESUME:
+${resumeText.slice(0, 4000)}`;
+
+      const llmRes = await llm.complete(prompt);
+      let parsed: any = {};
+      try {
+        const cleanContent = llmRes.content.replace(/```json/g, '').replace(/```/g, '').trim();
+        parsed = JSON.parse(cleanContent);
+      } catch {
+        parsed = {
+          candidate_name: 'Candidate',
+          current_stage: 'Fresher / Developer',
+          location_base: 'India',
+          primary_roles: ['Software Engineer', 'Android Developer'],
+          secondary_roles: ['Full Stack Developer', 'Cloud Engineer'],
+          must_have_skills: ['Kotlin', 'Java', 'Python', 'React', 'REST API'],
+          strong_plus_skills: ['AWS', 'SQL', 'Git'],
+          adjacent_skills: ['MongoDB', 'Docker'],
+          search_keywords: ['android', 'kotlin', 'software engineer', 'intern'],
+        };
+      }
+
+      // Update config.yaml
+      const configPath = path.resolve(process.cwd(), 'config.yaml');
+      let currentConfig: any = {};
+      if (fs.existsSync(configPath)) {
+        currentConfig = yaml.parse(fs.readFileSync(configPath, 'utf8')) || {};
+      }
+
+      currentConfig.candidate = {
+        name: parsed.candidate_name || currentConfig.candidate?.name || 'Candidate',
+        current_stage: parsed.current_stage || 'Software Engineer',
+        location_base: parsed.location_base || 'India',
+        currently_employed: false,
+      };
+
+      currentConfig.target_roles = {
+        primary: parsed.primary_roles || ['Software Engineer'],
+        secondary: parsed.secondary_roles || ['Developer'],
+        stretch: ['Associate SDE'],
+      };
+
+      currentConfig.skills_priority = {
+        must_have: parsed.must_have_skills || ['Programming'],
+        strong_plus: parsed.strong_plus_skills || ['Cloud'],
+        adjacent_credit: parsed.adjacent_skills || ['Web'],
+        not_yet_have: ['Multiplatform'],
+      };
+
+      fs.writeFileSync(configPath, yaml.stringify(currentConfig), 'utf8');
+
+      // Update watchlist.yaml automatically
+      const watchlistPath = path.resolve(process.cwd(), 'watchlist.yaml');
+      const keywords = parsed.search_keywords || ['software', 'developer', 'intern'];
+      const defaultWatchlist = {
+        companies: [
+          { name: 'Greenhouse Global', board_type: 'greenhouse', slug: 'demo', filters: { title_contains: keywords }, verified: false },
+          { name: 'Lever Careers', board_type: 'lever', slug: 'demo', filters: { title_contains: keywords }, verified: false },
+          { name: 'Ashby Board', board_type: 'ashby', slug: 'demo', filters: { title_contains: keywords }, verified: false },
+        ],
+        global_filters: {
+          reject_titles_contains: ['senior', 'lead', 'manager', 'director', 'principal'],
+          min_posted_within_days: 60,
+          dedupe_key: 'company+title+location',
+          search_scope: 'jobs + internships',
+        },
+      };
+      fs.writeFileSync(watchlistPath, yaml.stringify(defaultWatchlist), 'utf8');
+
+      res.json({
+        success: true,
+        message: 'Resume analyzed! Config and Watchlist automatically generated.',
+        profile: parsed,
+      });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  // --- EXISTING API ENDPOINTS ---
   app.get('/api/jobs', async (req, res) => {
     try {
       const db = await getDatabase();
@@ -176,9 +343,22 @@ export function startApiServer(port = 3847): void {
   });
 
   app.listen(port, () => {
+    const dashUrl = `http://localhost:${port}`;
     console.log(`\n======================================================`);
     console.log(`🚀 AI Job Search Co-Pilot Web Dashboard`);
-    console.log(`🌐 URL: http://localhost:${port}`);
+    console.log(`🌐 URL: ${dashUrl}`);
     console.log(`======================================================\n`);
+
+    // Auto-open browser when server starts
+    const startCmd =
+      process.platform === 'win32'
+        ? `start ${dashUrl}`
+        : process.platform === 'darwin'
+        ? `open ${dashUrl}`
+        : `xdg-open ${dashUrl}`;
+    exec(startCmd, () => {
+      // Ignore open browser errors
+    });
   });
 }
+
