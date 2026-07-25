@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JobPilot — AI Job Search Co-Pilot Web Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #0b0f19;
+      color: #f1f5f9;
+    }
+    h1, h2, h3, .font-heading {
+      font-family: 'Outfit', sans-serif;
+    }
+    .glass-panel {
+      background: rgba(30, 41, 59, 0.6);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .glass-card {
+      background: rgba(15, 23, 42, 0.7);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      transition: all 0.2s ease-in-out;
+    }
+    .glass-card:hover {
+      border-color: rgba(99, 102, 241, 0.4);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px -6px rgba(99, 102, 241, 0.25);
+    }
+    .gradient-text {
+      background: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .tier-badge-a { background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3); }
+    .tier-badge-b { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
+    .tier-badge-c { background: rgba(234, 179, 8, 0.15); color: #facc15; border: 1px solid rgba(234, 179, 8, 0.3); }
+    .tier-badge-d { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+    
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); }
+    ::-webkit-scrollbar-thumb { background: rgba(51, 65, 85, 0.8); border-radius: 4px; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-indigo-500 selection:text-white">
+
+  <!-- Header / Navigation Bar -->
+  <header class="sticky top-0 z-40 glass-panel border-b border-slate-800 px-6 py-4 flex items-center justify-between">
+    <div class="flex items-center space-x-3">
+      <div class="h-10 w-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+        <i data-lucide="bot" class="w-6 h-6 text-white"></i>
+      </div>
+      <div>
+        <h1 class="text-xl font-bold font-heading tracking-tight flex items-center gap-2">
+          <span>JobPilot</span>
+          <span class="text-xs px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">v1.0 Pro</span>
+        </h1>
+        <p class="text-xs text-slate-400">AI Job Search Co-Pilot — Local-First Intelligence</p>
+      </div>
+    </div>
+
+    <!-- Actions & Control Tabs -->
+    <div class="flex items-center space-x-3">
+      <button onclick="openAddJobModal()" class="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-medium text-sm flex items-center space-x-2 shadow-lg shadow-indigo-500/25 transition">
+        <i data-lucide="plus-circle" class="w-4 h-4"></i>
+        <span>Add Job URL</span>
+      </button>
+
+      <button onclick="triggerWatchScan()" class="px-4 py-2 rounded-xl glass-panel hover:bg-slate-800 text-slate-200 font-medium text-sm flex items-center space-x-2 border border-slate-700 transition">
+        <i data-lucide="radar" class="w-4 h-4 text-indigo-400"></i>
+        <span>Scan Watchlist</span>
+      </button>
+
+      <button onclick="openResumeEditor()" class="px-4 py-2 rounded-xl glass-panel hover:bg-slate-800 text-slate-200 font-medium text-sm flex items-center space-x-2 border border-slate-700 transition">
+        <i data-lucide="file-text" class="w-4 h-4 text-purple-400"></i>
+        <span>Resume Ground Truth</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Content Area -->
+  <main class="flex-1 p-6 space-y-6 max-w-[1920px] mx-auto w-full">
+
+    <!-- Key Metrics & Pipeline Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+      <div class="glass-panel p-4 rounded-2xl flex items-center space-x-4">
+        <div class="p-3 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+          <i data-lucide="briefcase" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <p class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Total Pipeline</p>
+          <h3 id="stat-total" class="text-2xl font-bold font-heading">0</h3>
+        </div>
+      </div>
+
+      <div class="glass-panel p-4 rounded-2xl flex items-center space-x-4">
+        <div class="p-3 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+          <i data-lucide="sparkles" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <p class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Tier A Matches</p>
+          <h3 id="stat-tier-a" class="text-2xl font-bold font-heading text-emerald-400">0</h3>
+        </div>
+      </div>
+
+      <div class="glass-panel p-4 rounded-2xl flex items-center space-x-4">
+        <div class="p-3 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20">
+          <i data-lucide="file-check" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <p class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Tailored Applications</p>
+          <h3 id="stat-tailored" class="text-2xl font-bold font-heading text-blue-400">0</h3>
+        </div>
+      </div>
+
+      <div class="glass-panel p-4 rounded-2xl flex items-center space-x-4">
+        <div class="p-3 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20">
+          <i data-lucide="send" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <p class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Submitted</p>
+          <h3 id="stat-applied" class="text-2xl font-bold font-heading text-purple-400">0</h3>
+        </div>
+      </div>
+
+      <div class="glass-panel p-4 rounded-2xl flex items-center space-x-4">
+        <div class="p-3 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
+          <i data-lucide="clock" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <p class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Avg Fit Score</p>
+          <h3 id="stat-avg-score" class="text-2xl font-bold font-heading text-amber-400">0%</h3>
+        </div>
+      </div>
+    </div>
+
+    <!-- Kanban Board Container -->
+    <div class="glass-panel rounded-2xl p-6 overflow-x-auto min-h-[750px]">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-lg font-bold font-heading flex items-center gap-2">
+          <i data-lucide="layout-grid" class="w-5 h-5 text-indigo-400"></i>
+          <span>Application Pipeline Kanban</span>
+        </h2>
+        <div class="text-xs text-slate-400">
+          Tip: Click card to view fit scorecard & generate tailored ATS PDF
+        </div>
+      </div>
+
+      <!-- Columns Grid -->
+      <div id="kanban-grid" class="flex gap-4 min-w-[1600px]">
+        <!-- Columns rendered dynamically via JS -->
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal: Scorecard Detail -->
+  <div id="scorecard-modal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="glass-panel bg-slate-900 border border-slate-700 rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto p-6 space-y-6 shadow-2xl">
+      <div class="flex justify-between items-start border-b border-slate-800 pb-4">
+        <div>
+          <span id="modal-tier" class="px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wider">Tier A</span>
+          <h2 id="modal-company-title" class="text-2xl font-bold font-heading mt-1">Company — Role</h2>
+          <p id="modal-location" class="text-sm text-slate-400 mt-0.5">Location</p>
+        </div>
+        <button onclick="closeModal('scorecard-modal')" class="text-slate-400 hover:text-white p-1">
+          <i data-lucide="x" class="w-6 h-6"></i>
+        </button>
+      </div>
+
+      <!-- Score Gauge & Subscores -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="glass-card p-6 rounded-xl text-center flex flex-col justify-center items-center">
+          <p class="text-xs text-slate-400 uppercase font-semibold">Overall Fit Score</p>
+          <div id="modal-score-circle" class="text-5xl font-extrabold font-heading text-indigo-400 my-2">0</div>
+          <span id="modal-verdict" class="text-xs text-slate-300 px-2 py-1 rounded bg-slate-800">Verdict</span>
+        </div>
+
+        <div class="md:col-span-2 glass-card p-4 rounded-xl space-y-3 text-xs">
+          <h4 class="font-semibold text-slate-300 text-sm">Dimension Subscores</h4>
+          <div class="space-y-2">
+            <div>
+              <div class="flex justify-between text-slate-400 mb-1"><span>Skills Match (35%)</span><span id="score-skills">0%</span></div>
+              <div class="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden"><div id="bar-skills" class="h-full bg-indigo-500 w-0"></div></div>
+            </div>
+            <div>
+              <div class="flex justify-between text-slate-400 mb-1"><span>Seniority Alignment (25%)</span><span id="score-seniority">0%</span></div>
+              <div class="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden"><div id="bar-seniority" class="h-full bg-blue-500 w-0"></div></div>
+            </div>
+            <div>
+              <div class="flex justify-between text-slate-400 mb-1"><span>Trajectory Fit (15%)</span><span id="score-trajectory">0%</span></div>
+              <div class="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden"><div id="bar-trajectory" class="h-full bg-purple-500 w-0"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Strengths & Gaps -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+        <div class="glass-card p-4 rounded-xl space-y-2">
+          <h4 class="font-semibold text-emerald-400 flex items-center gap-1.5 text-sm">
+            <i data-lucide="check-circle2" class="w-4 h-4"></i> Top Strengths
+          </h4>
+          <ul id="modal-strengths" class="space-y-1.5 text-slate-300 list-disc list-inside"></ul>
+        </div>
+
+        <div class="glass-card p-4 rounded-xl space-y-2">
+          <h4 class="font-semibold text-amber-400 flex items-center gap-1.5 text-sm">
+            <i data-lucide="alert-triangle" class="w-4 h-4"></i> Gaps & Considerations
+          </h4>
+          <ul id="modal-gaps" class="space-y-1.5 text-slate-300 list-disc list-inside"></ul>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex justify-end space-x-3 border-t border-slate-800 pt-4">
+        <button id="btn-tailor-modal" onclick="tailorCurrentJob()" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm flex items-center space-x-2 shadow-lg shadow-indigo-500/30">
+          <i data-lucide="wand2" class="w-4 h-4"></i>
+          <span>Tailor Resume & Generate PDF</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Add Job URL -->
+  <div id="add-job-modal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="glass-panel bg-slate-900 border border-slate-700 rounded-2xl max-w-xl w-full p-6 space-y-5 shadow-2xl">
+      <div class="flex justify-between items-center">
+        <h3 class="text-xl font-bold font-heading">Add & Score Job Posting</h3>
+        <button onclick="closeModal('add-job-modal')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Job URL or Description Text</label>
+          <textarea id="input-job-url" rows="5" placeholder="Paste Greenhouse, Lever, Ashby URL or raw job description text..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-slate-200 focus:outline-none focus:border-indigo-500"></textarea>
+        </div>
+
+        <button onclick="submitAddJob()" class="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 font-semibold text-white text-sm flex items-center justify-center space-x-2 shadow-lg shadow-indigo-500/25">
+          <i data-lucide="sparkles" class="w-4 h-4"></i>
+          <span>Analyze, Ingest & Score Job</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Resume Ground Truth Editor -->
+  <div id="resume-editor-modal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="glass-panel bg-slate-900 border border-slate-700 rounded-2xl max-w-4xl w-full max-h-[90vh] p-6 space-y-4 shadow-2xl flex flex-col">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+        <div>
+          <h3 class="text-xl font-bold font-heading">Ground Truth Resume (`resume.md`)</h3>
+          <p class="text-xs text-slate-400">JobPilot treats this as the single source of absolute truth for all tailoring operations.</p>
+        </div>
+        <button onclick="closeModal('resume-editor-modal')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+
+      <textarea id="resume-editor-text" class="flex-1 w-full min-h-[450px] bg-slate-950 border border-slate-800 rounded-xl p-4 font-mono text-xs text-slate-200 focus:outline-none focus:border-indigo-500"></textarea>
+
+      <div class="flex justify-end space-x-3">
+        <button onclick="saveResumeContent()" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm flex items-center space-x-2 shadow-lg shadow-emerald-500/30">
+          <i data-lucide="save" class="w-4 h-4"></i>
+          <span>Save Resume Ground Truth</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const STAGES = ["Discovered", "Scored", "Tailored", "Applied", "Screening", "Interviewing", "Offer", "Rejected"];
+    let currentJobs = [];
+    let activeSelectedJobId = null;
+
+    async function fetchJobs() {
+      try {
+        const res = await fetch('/api/jobs');
+        const json = await res.json();
+        if (json.success) {
+          currentJobs = json.data;
+          renderStats();
+          renderKanban();
+        }
+      } catch (err) {
+        console.error('Error fetching jobs:', err);
+      }
+    }
+
+    function renderStats() {
+      document.getElementById('stat-total').innerText = currentJobs.length;
+      const tierA = currentJobs.filter(j => j.tier === 'A').length;
+      document.getElementById('stat-tier-a').innerText = tierA;
+      const tailored = currentJobs.filter(j => j.status === 'Tailored').length;
+      document.getElementById('stat-tailored').innerText = tailored;
+      const applied = currentJobs.filter(j => ['Applied', 'Screening', 'Interviewing', 'Offer'].includes(j.status)).length;
+      document.getElementById('stat-applied').innerText = applied;
+
+      const avgScore = currentJobs.length > 0 ? Math.round(currentJobs.reduce((acc, j) => acc + j.score, 0) / currentJobs.length) : 0;
+      document.getElementById('stat-avg-score').innerText = `${avgScore}%`;
+    }
+
+    function renderKanban() {
+      const grid = document.getElementById('kanban-grid');
+      grid.innerHTML = '';
+
+      STAGES.forEach(stage => {
+        const stageJobs = currentJobs.filter(j => (j.status || 'Discovered').toLowerCase() === stage.toLowerCase());
+        
+        const col = document.createElement('div');
+        col.className = 'w-64 flex-shrink-0 flex flex-col gap-3';
+        
+        col.innerHTML = `
+          <div class="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-900/80 border border-slate-800">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-300 font-heading">${stage}</span>
+            <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-800 text-slate-400">${stageJobs.length}</span>
+          </div>
+          <div class="flex-1 flex flex-col gap-3 min-h-[600px] p-1">
+            ${stageJobs.map(job => `
+              <div onclick="openScorecardModal('${job.id}')" class="glass-card p-4 rounded-xl cursor-pointer space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-bold text-slate-300 font-heading">${escapeHtml(job.company)}</span>
+                  <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase ${getTierBadgeClass(job.tier)}">Tier ${job.tier} (${job.score})</span>
+                </div>
+                <h4 class="text-sm font-semibold text-slate-100 leading-snug line-clamp-2">${escapeHtml(job.title)}</h4>
+                <div class="flex items-center justify-between text-[11px] text-slate-400 pt-1 border-t border-slate-800/80">
+                  <span>${escapeHtml(job.location || 'Remote')}</span>
+                  <select onclick="event.stopPropagation()" onchange="moveJobStage('${job.id}', this.value)" class="bg-slate-900 border border-slate-700 text-slate-300 rounded px-1.5 py-0.5 text-[10px] focus:outline-none">
+                    ${STAGES.map(s => `<option value="${s}" ${s.toLowerCase() === stage.toLowerCase() ? 'selected' : ''}>${s}</option>`).join('')}
+                  </select>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+        grid.appendChild(col);
+      });
+
+      lucide.createIcons();
+    }
+
+    function getTierBadgeClass(tier) {
+      if (tier === 'A') return 'tier-badge-a';
+      if (tier === 'B') return 'tier-badge-b';
+      if (tier === 'C') return 'tier-badge-c';
+      return 'tier-badge-d';
+    }
+
+    async function moveJobStage(jobId, newStage) {
+      try {
+        await fetch(`/api/jobs/${jobId}/status`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: newStage })
+        });
+        fetchJobs();
+      } catch (err) {
+        console.error('Error moving job stage:', err);
+      }
+    }
+
+    function openScorecardModal(jobId) {
+      activeSelectedJobId = jobId;
+      const job = currentJobs.find(j => j.id === jobId);
+      if (!job) return;
+
+      document.getElementById('modal-company-title').innerText = `${job.company} — ${job.title}`;
+      document.getElementById('modal-location').innerText = `${job.location} (${job.remote_policy || 'Remote'})`;
+      document.getElementById('modal-score-circle').innerText = job.score;
+      document.getElementById('modal-tier').innerText = `Tier ${job.tier}`;
+      document.getElementById('modal-tier').className = `px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wider ${getTierBadgeClass(job.tier)}`;
+
+      if (job.scorecard) {
+        document.getElementById('modal-verdict').innerText = job.scorecard.verdict || '';
+        document.getElementById('score-skills').innerText = `${job.scorecard.subscores.skills}%`;
+        document.getElementById('bar-skills').style.width = `${job.scorecard.subscores.skills}%`;
+        document.getElementById('score-seniority').innerText = `${job.scorecard.subscores.seniority}%`;
+        document.getElementById('bar-seniority').style.width = `${job.scorecard.subscores.seniority}%`;
+        document.getElementById('score-trajectory').innerText = `${job.scorecard.subscores.trajectory}%`;
+        document.getElementById('bar-trajectory').style.width = `${job.scorecard.subscores.trajectory}%`;
+
+        document.getElementById('modal-strengths').innerHTML = (job.scorecard.strengths || []).map(s => `<li>${escapeHtml(s)}</li>`).join('');
+        document.getElementById('modal-gaps').innerHTML = (job.scorecard.gaps || []).map(g => `<li>${escapeHtml(g.description)}</li>`).join('');
+      }
+
+      document.getElementById('scorecard-modal').classList.remove('hidden');
+    }
+
+    async function tailorCurrentJob() {
+      if (!activeSelectedJobId) return;
+      const btn = document.getElementById('btn-tailor-modal');
+      btn.innerText = 'Generating ATS PDF & Assets...';
+      btn.disabled = true;
+
+      try {
+        const res = await fetch(`/api/jobs/${activeSelectedJobId}/tailor`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ coverLetter: true })
+        });
+        const json = await res.json();
+        if (json.success) {
+          alert(`Success! Tailored ATS PDF generated at:\n${json.package.resumePdfPath}`);
+          closeModal('scorecard-modal');
+          fetchJobs();
+        }
+      } catch (err) {
+        alert('Error generating tailored package.');
+      } finally {
+        btn.innerText = 'Tailor Resume & Generate PDF';
+        btn.disabled = false;
+      }
+    }
+
+    function openAddJobModal() {
+      document.getElementById('add-job-modal').classList.remove('hidden');
+    }
+
+    async function submitAddJob() {
+      const val = document.getElementById('input-job-url').value.trim();
+      if (!val) return;
+
+      try {
+        const res = await fetch('/api/jobs/add', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ urlOrText: val })
+        });
+        const json = await res.json();
+        if (json.success) {
+          closeModal('add-job-modal');
+          document.getElementById('input-job-url').value = '';
+          fetchJobs();
+        }
+      } catch (err) {
+        alert('Error analyzing job.');
+      }
+    }
+
+    async function triggerWatchScan() {
+      alert('Scanning Watchlist company boards in background...');
+      await fetch('/api/watcher/scan', { method: 'POST' });
+      fetchJobs();
+    }
+
+    async function openResumeEditor() {
+      const res = await fetch('/api/resume');
+      const json = await res.json();
+      if (json.success) {
+        document.getElementById('resume-editor-text').value = json.content;
+        document.getElementById('resume-editor-modal').classList.remove('hidden');
+      }
+    }
+
+    async function saveResumeContent() {
+      const val = document.getElementById('resume-editor-text').value;
+      await fetch('/api/resume', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: val })
+      });
+      alert('Resume Ground Truth saved!');
+      closeModal('resume-editor-modal');
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.add('hidden');
+    }
+
+    function escapeHtml(str) {
+      return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      fetchJobs();
+    });
+  </script>
+</body>
+</html>

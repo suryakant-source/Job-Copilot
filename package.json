@@ -9,8 +9,9 @@
   "type": "module",
   "scripts": {
     "build": "tsc",
-    "start": "node dist/cli.js",
-    "dev": "tsx src/cli.ts",
+    "start": "node dist/cli.js server --port 3847",
+    "web": "node dist/cli.js server --port 3847",
+    "dev": "tsx src/cli.ts server --port 3847",
     "test": "tsx --test src/tests/*.test.ts",
     "lint": "eslint src --ext .ts",
     "format": "prettier --write \"src/**/*.ts\""
@@ -21,6 +22,7 @@
     "co-pilot",
     "ats",
     "career",
+    "web-dashboard",
     "cli"
   ],
   "author": "Antigravity AI",
