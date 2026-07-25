@@ -1,0 +1,49 @@
+{
+  "name": "job-copilot",
+  "version": "1.0.0",
+  "description": "Local-first AI-powered Job Search Co-Pilot system",
+  "main": "dist/cli.js",
+  "bin": {
+    "job-copilot": "dist/cli.js"
+  },
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/cli.js",
+    "dev": "tsx src/cli.ts",
+    "test": "tsx --test src/tests/*.test.ts",
+    "lint": "eslint src --ext .ts",
+    "format": "prettier --write \"src/**/*.ts\""
+  },
+  "keywords": [
+    "job-search",
+    "ai",
+    "co-pilot",
+    "ats",
+    "career",
+    "cli"
+  ],
+  "author": "Antigravity AI",
+  "license": "MIT",
+  "dependencies": {
+    "@clack/prompts": "^0.8.2",
+    "commander": "^12.1.0",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "handlebars": "^4.7.8",
+    "node-notifier": "^10.0.1",
+    "sql.js": "^1.12.0",
+    "yaml": "^2.7.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.10.1",
+    "@types/node-notifier": "^8.0.5",
+    "@types/sql.js": "^1.4.9",
+    "eslint": "^9.17.0",
+    "prettier": "^3.4.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}

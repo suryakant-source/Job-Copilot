@@ -1,0 +1,14 @@
+node_modules/
+dist/
+*.db
+*.sqlite
+*.log
+.env
+reports/*.md
+!reports/.gitkeep
+applications/*
+!applications/.gitkeep
+digests/*.md
+!digests/.gitkeep
+dashboard/job-copilot-dash
+dashboard/job-copilot-dash.exe

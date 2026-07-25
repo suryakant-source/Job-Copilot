@@ -1,0 +1,99 @@
+-- SQLite schema for Job Search Co-Pilot
+
+CREATE TABLE IF NOT EXISTS migrations (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL UNIQUE,
+  applied_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS jobs (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  company TEXT NOT NULL,
+  location TEXT DEFAULT 'Remote',
+  remote_policy TEXT DEFAULT 'Remote',
+  salary_min REAL DEFAULT 0,
+  salary_max REAL DEFAULT 0,
+  currency TEXT DEFAULT 'USD',
+  seniority TEXT DEFAULT 'Mid',
+  required_skills TEXT DEFAULT '[]',
+  nice_to_have_skills TEXT DEFAULT '[]',
+  years_experience INTEGER DEFAULT 0,
+  visa_sponsorship INTEGER DEFAULT 0,
+  posted_date TEXT,
+  source TEXT NOT NULL,
+  raw_text TEXT,
+  dedupe_hash TEXT UNIQUE NOT NULL,
+  status TEXT DEFAULT 'Discovered',
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS job_sources (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  job_id TEXT NOT NULL,
+  url TEXT NOT NULL,
+  source_name TEXT NOT NULL,
+  fetched_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS job_events (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  job_id TEXT NOT NULL,
+  status TEXT NOT NULL,
+  notes TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS score_cache (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  resume_hash TEXT NOT NULL,
+  job_hash TEXT NOT NULL,
+  score INTEGER NOT NULL,
+  tier TEXT NOT NULL,
+  scorecard_json TEXT NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(resume_hash, job_hash)
+);
+
+CREATE TABLE IF NOT EXISTS applications (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  job_id TEXT NOT NULL UNIQUE,
+  status TEXT DEFAULT 'Tailored',
+  tailored_resume_path TEXT,
+  pdf_path TEXT,
+  changes_path TEXT,
+  cover_letter_path TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS notes (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  job_id TEXT NOT NULL,
+  content TEXT NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS watcher_seen (
+  hash TEXT PRIMARY KEY,
+  job_url TEXT NOT NULL,
+  company TEXT NOT NULL,
+  title TEXT NOT NULL,
+  seen_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS llm_costs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  run_id TEXT NOT NULL,
+  provider TEXT NOT NULL,
+  model TEXT NOT NULL,
+  prompt_tokens INTEGER DEFAULT 0,
+  completion_tokens INTEGER DEFAULT 0,
+  total_cost_usd REAL DEFAULT 0,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);

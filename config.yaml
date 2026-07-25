@@ -1,0 +1,111 @@
+# JobPilot Config — Debasrita Das
+# Auto-generated from resume.md. Edit thresholds/priorities anytime — JobPilot re-reads this every scan.
+# v3 update: now searching for BOTH jobs AND internships. Added entry-level job titles alongside intern roles.
+
+candidate:
+  name: "Debasrita Das"
+  current_stage: "3rd-year B.Tech CSE, Silicon University (grad 2027) — CGPA 8.78"
+  location_base: "Cuttack, Odisha, India"
+  currently_employed: true   # active internship at Ingenious Tech (Jun 2026–Present) — don't treat as "seeking first internship"
+
+target_roles:
+  primary:
+    - "GenAI / AI Android Developer Intern"       # matches current role + NeuraChat/RAG work
+    - "Android Developer Intern"
+    - "Mobile App Developer Intern"
+    - "Android Developer"                          # v3: full-time/entry-level jobs
+    - "Software Engineer - Android"                # v3: full-time job title
+    - "SDE - Android"                              # v3: full-time job title
+  secondary:
+    - "AI Engineer Intern"                        # justified by RAG pipelines, LLM integration
+    - "Full Stack Developer Intern"                # justified by GigShield (MERN)
+    - "SDE Intern"                                 # if JD leans mobile/AI/backend
+    - "Software Development Engineer"              # v3: entry-level full-time
+    - "Mobile Developer"                           # v3: entry-level full-time
+    - "Full Stack Developer"                       # v3: entry-level full-time (MERN background)
+  stretch:
+    - "Applied AI Intern"
+    - "New-grad Android/AI role (early access / pre-PPO track)"
+    - "Junior Android Developer"                   # v3: junior full-time positions
+    - "Associate Software Engineer"                # v3: entry-level full-time
+
+seniority:
+  level: "internship + entry-level (experienced — 3rd internship, currently active)"
+  reject_if_min_experience_years: 3     # accept up to 2 YOE requirements — clears via 3 internships
+  accept_types: ["internship", "full-time", "contract"]   # v3: accept both internships AND jobs
+  note: "Search for BOTH internships and entry-level/new-grad jobs. Don't auto-reject '1-2 YOE' postings — she qualifies via 3 internships."
+
+compensation:
+  currency: "INR"
+  stipend_floor_monthly: 20000          # raised from 15000 — 3rd internship, production RAG shipping, deserves better floor
+  stipend_target_monthly: 40000
+  unpaid_internships: "reject"          # unless Tier-1 brand explicitly worth it — ask before reject
+
+location:
+  remote_ok: true
+  hybrid_ok: true
+  onsite_ok_cities:
+    - "Bhubaneswar"
+    - "Cuttack"
+    - "Bangalore"
+    - "Hyderabad"
+    - "Pune"
+  onsite_other_cities: "score down, don't reject — relocation possible for strong brand/role"
+
+duration:
+  min_months: 2
+  preferred_months: 3-6
+  ppo_potential: "strong positive signal, boost trajectory subscore — she's now demonstrably PPO-track material"
+
+industries_prefer:
+  - "generative AI / LLM products"      # new #1 — matches current role + NeuraChat directly
+  - "consumer apps"
+  - "fintech"
+  - "developer tools"
+  - "gig-economy / marketplace"          # matches GigShield
+industries_avoid: []
+
+scoring_weights:            # overrides JobPilot defaults; sums to 100
+  skills_match: 40
+  experience_seniority_fit: 20          # raised from 15 — real production experience now differentiates her, weight it
+  trajectory_fit: 15
+  compensation_fit: 8                   # lowered slightly
+  location_remote_fit: 10
+  company_signals: 7
+
+skills_priority:            # weighted inside skills_match — used for semantic matching
+  must_have:
+    - "Kotlin"
+    - "Jetpack Compose"
+    - "MVVM / Clean Architecture"
+    - "REST API integration (Retrofit)"
+    - "RAG / LLM integration"            # new — now a core differentiator, not adjacent
+  strong_plus:
+    - "Coroutines / StateFlow"
+    - "Firebase / Supabase"
+    - "Room / DataStore"
+    - "Material Design / Material 3"
+    - "Prompt Engineering"               # new
+    - "Vector embeddings"                # new
+    - "Groq API / Gemini API"            # new
+    - "ML Kit"                           # new
+  adjacent_credit:          # partial credit if JD asks for these
+    - "React / Node.js / Express"
+    - "MongoDB"
+    - "AWS (EC2, S3, Lambda, CloudFormation, IAM)"
+    - "JavaScript/TypeScript"
+    - "JWT auth"
+  not_yet_have:             # flag as coachable gap, not dealbreaker
+    - "Flutter"
+    - "iOS / Swift"
+    - "Jetpack Compose Multiplatform"
+    - "CI/CD (Fastlane, GitHub Actions for mobile)"
+    - "Fine-tuning / model training (she's done RAG/integration, not training)"
+
+career_goals: "Land a GenAI-focused Android internship OR entry-level Android/AI job at a product company with real user scale; convert internship to PPO or secure a new-grad full-time role. Long-term: AI-native mobile/full-stack engineer."
+
+red_flag_sensitivity:
+  ghost_job_repost_days: 45
+  vague_comp: "flag"
+  "no JD tech stack listed": "flag"
+  "AI/GenAI buzzword with no real LLM work in JD": "flag"    # new — avoid GenAI-title-only listings that are actually generic Android roles

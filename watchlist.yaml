@@ -1,0 +1,94 @@
+# JobPilot Watchlist — Debasrita Das
+# v3 update: now scanning for BOTH jobs AND internships across all companies.
+# Added intern/internship/trainee/sde keywords to every company filter.
+# NOTE: board_type + slug are best-guess defaults. JobPilot must verify each on first scan
+# (hit the API, confirm 200) and mark verified: false entries as needs_check until confirmed.
+
+companies:
+  # --- GenAI / AI-native (new priority tier) ---
+  - name: "Perplexity AI"
+    board_type: "greenhouse"
+    slug: "perplexityai"
+    filters: { title_contains: ["android", "mobile", "genai", "llm", "intern", "internship", "trainee", "sde", "software"] }
+    verified: false
+
+  - name: "Sarvam AI"
+    board_type: "custom"
+    slug: "sarvam-careers"
+    filters: { title_contains: ["android", "mobile", "applied ai", "intern", "internship", "trainee", "sde", "software", "ai engineer"] }
+    verified: false
+    note: "May run custom/Notion-based careers page — flag as non-standard source"
+
+  - name: "Krutrim (Ola)"
+    board_type: "greenhouse"
+    slug: "krutrim"
+    filters: { title_contains: ["android", "mobile", "ai", "intern", "internship", "trainee", "sde", "software"] }
+    verified: false
+
+  # --- Consumer / product companies, Android track ---
+  - name: "Razorpay"
+    board_type: "greenhouse"
+    slug: "razorpay"
+    filters: { title_contains: ["android", "mobile", "intern", "internship", "sde", "software engineer", "trainee"], remote_ok: true }
+    verified: false
+
+  - name: "CRED"
+    board_type: "lever"
+    slug: "cred"
+    filters: { title_contains: ["android", "mobile", "sde", "intern", "internship", "software", "trainee", "developer"] }
+    verified: false
+
+  - name: "Groww"
+    board_type: "greenhouse"
+    slug: "groww"
+    filters: { title_contains: ["android", "mobile", "intern", "internship", "sde", "software", "trainee"] }
+    verified: false
+
+  - name: "Swiggy"
+    board_type: "greenhouse"
+    slug: "swiggy"
+    filters: { title_contains: ["android", "mobile"] }
+    verified: false
+
+  - name: "PhonePe"
+    board_type: "ashby"
+    slug: "phonepe"
+    filters: { title_contains: ["android", "mobile", "sde", "intern", "internship", "software engineer", "trainee"] }
+    verified: false
+
+  - name: "Meesho"
+    board_type: "greenhouse"
+    slug: "meesho"
+    filters: { title_contains: ["android", "mobile"] }
+    verified: false
+
+  - name: "Zepto"
+    board_type: "ashby"
+    slug: "zepto"
+    filters: { title_contains: ["android", "mobile"] }
+    verified: false
+
+  - name: "Zoho"
+    board_type: "custom"
+    slug: "zoho-careers"
+    filters: { title_contains: ["android", "mobile", "intern", "internship", "sde", "software", "trainee", "developer"] }
+    verified: false
+    note: "Requires custom HTML scrape — flag to JobPilot as non-standard source"
+
+  - name: "Freshworks"
+    board_type: "greenhouse"
+    slug: "freshworks"
+    filters: { title_contains: ["android", "mobile"] }
+    verified: false
+
+  - name: "InMobi"
+    board_type: "lever"
+    slug: "inmobi"
+    filters: { title_contains: ["android", "mobile"] }
+    verified: false
+
+global_filters:
+  reject_titles_contains: ["senior", "lead", "manager", "sr.", "director", "principal", "staff"]
+  min_posted_within_days: 60
+  dedupe_key: "company+title+location"
+  search_scope: "jobs + internships"   # v3: explicitly scan for both jobs AND internships
